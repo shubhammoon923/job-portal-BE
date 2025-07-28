@@ -23,23 +23,31 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
-        // Using the builder pattern for configuration
         return httpSecurity
-                .csrf(csrf -> csrf.disable())  // Disables CSRF protection
+                .csrf(csrf -> csrf.disable()) // Disable CSRF for Postman/API testing
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().authenticated() // Requires authentication for all requests
+                        .requestMatchers("/public/**").permitAll() // Allow public endpoints
+                        .anyRequest().authenticated()              // Require auth for all other endpoints
                 )
-                .formLogin(withDefaults()) // Enables form-based login with default settings
-                .httpBasic(withDefaults()) // Enables basic authentication with default settings
-                .build(); // Builds and returns the SecurityFilterChain
+                .formLogin(form -> form     // Optional: enable default login page
+                        .loginPage("/login") // Customize this if you have a login page
+                        .permitAll()
+                )
+                .httpBasic(withDefaults()) // Enable basic auth (for Postman)
+                .build();
     }
 
     @Bean
-    public AuthenticationProvider authenticationProvider(){
+    public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
+        provider.setPasswordEncoder(NoOpPasswordEncoder.getInstance()); // Passwords stored in plain text (for dev only!)
         provider.setUserDetailsService(userDetailsService);
         return provider;
     }
 
+    // Optional: expose UserDetailsService as a bean
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return userDetailsService;
+    }
 }
